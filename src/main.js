@@ -4,10 +4,12 @@ import '@fontsource/dm-sans/600.css';
 import '@fontsource/dm-sans/700.css';
 import { marked } from 'marked';
 import DOMPurify from 'dompurify';
+import { streamGeminiAnswer, recommendGeminiQuestions } from './gemini-client.js';
 import './style.css';
 
 const STORAGE_KEY = 'google-ai-conversations-v1';
 const THEME_KEY = 'google-ai-theme';
+const PUBLIC_GEMINI_KEY = import.meta.env.VITE_GEMINI_API_KEY || '';
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL?.replace(/\/$/, '') || '';
 const starterQuestions = [
   ['Science', 'Why is the sky blue?'],
@@ -272,47 +274,57 @@ async function generateAnswer(turnIndex, regenerate) {
   let streamedText = '';
 
   try {
-    if (!API_BASE_URL && import.meta.env.BASE_URL !== '/') {
-      throw new Error('The Gemini service is not configured for this Pages deployment.');
-    }
-    const response = await fetch(`${API_BASE_URL}/api/answer`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ question: turn.question, history: priorTurns }),
-      signal: AbortSignal.timeout(70_000)
-    });
-    if (!response.ok) {
-      const problem = await response.json().catch(() => ({}));
-      throw new Error(problem.error || 'I could not start that request. Please try again.');
-    }
-    const reader = response.body.getReader();
-    const decoder = new TextDecoder();
-    let buffer = '';
-    let recommendations = [];
-    while (true) {
-      const { value, done } = await reader.read();
-      buffer += decoder.decode(value || new Uint8Array(), { stream: !done });
-      const events = buffer.split(/\r?\n\r?\n/);
-      buffer = events.pop() || '';
-      for (const rawEvent of events) {
-        const eventName = rawEvent.match(/^event: (.+)$/m)?.[1];
-        const data = rawEvent.match(/^data: (.+)$/m)?.[1];
-        if (!eventName || !data) continue;
-        const payload = JSON.parse(data);
-        if (eventName === 'token') {
-          streamedText += payload.text;
-          answerNode.textContent = streamedText;
-        } else if (eventName === 'complete') {
-          recommendations = payload.recommendations || [];
-        } else if (eventName === 'error') {
-          throw new Error(payload.message);
-        }
+    if (PUBLIC_GEMINI_KEY) {
+      for await (const text of streamGeminiAnswer(PUBLIC_GEMINI_KEY, turn.question, priorTurns)) {
+        streamedText += text;
+        answerNode.textContent = streamedText;
       }
-      if (done) break;
+      if (!streamedText.trim()) throw new Error('I did not get an answer that time. Please try again.');
+      turn.answer = streamedText;
+      turn.recommendations = await recommendGeminiQuestions(PUBLIC_GEMINI_KEY, turn.question, streamedText, priorTurns);
+    } else {
+      if (!API_BASE_URL && import.meta.env.BASE_URL !== '/') {
+        throw new Error('Gemini is not configured. Add VITE_GEMINI_API_KEY before building for GitHub Pages.');
+      }
+      const response = await fetch(`${API_BASE_URL}/api/answer`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ question: turn.question, history: priorTurns }),
+        signal: AbortSignal.timeout(70_000)
+      });
+      if (!response.ok) {
+        const problem = await response.json().catch(() => ({}));
+        throw new Error(problem.error || 'I could not start that request. Please try again.');
+      }
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
+      let recommendations = [];
+      while (true) {
+        const { value, done } = await reader.read();
+        buffer += decoder.decode(value || new Uint8Array(), { stream: !done });
+        const events = buffer.split(/\r?\n\r?\n/);
+        buffer = events.pop() || '';
+        for (const rawEvent of events) {
+          const eventName = rawEvent.match(/^event: (.+)$/m)?.[1];
+          const data = rawEvent.match(/^data: (.+)$/m)?.[1];
+          if (!eventName || !data) continue;
+          const payload = JSON.parse(data);
+          if (eventName === 'token') {
+            streamedText += payload.text;
+            answerNode.textContent = streamedText;
+          } else if (eventName === 'complete') {
+            recommendations = payload.recommendations || [];
+          } else if (eventName === 'error') {
+            throw new Error(payload.message);
+          }
+        }
+        if (done) break;
+      }
+      if (!streamedText.trim()) throw new Error('I did not get an answer that time. Please try again.');
+      turn.answer = streamedText;
+      turn.recommendations = recommendations;
     }
-    if (!streamedText.trim()) throw new Error('I did not get an answer that time. Please try again.');
-    turn.answer = streamedText;
-    turn.recommendations = recommendations;
     turn.error = '';
   } catch (error) {
     turn.answer = streamedText;
