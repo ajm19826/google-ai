@@ -57,3 +57,20 @@ test('returns a friendly event when the Gemini provider fails', async () => {
     assert.doesNotMatch(body, /provider details/);
   });
 });
+
+test('allows only configured browser origins to read API responses', async () => {
+  const previousOrigin = process.env.CORS_ORIGIN;
+  process.env.CORS_ORIGIN = 'https://owner.github.io';
+  const app = createApp({ answerStream: async function* () {}, getRecommendations: async () => [] });
+  try {
+    await withServer(app, async base => {
+      const allowed = await fetch(`${base}/api/health`, { headers: { Origin: 'https://owner.github.io' } });
+      const denied = await fetch(`${base}/api/health`, { headers: { Origin: 'https://other.example' } });
+      assert.equal(allowed.headers.get('access-control-allow-origin'), 'https://owner.github.io');
+      assert.equal(denied.headers.get('access-control-allow-origin'), null);
+    });
+  } finally {
+    if (previousOrigin === undefined) delete process.env.CORS_ORIGIN;
+    else process.env.CORS_ORIGIN = previousOrigin;
+  }
+});

@@ -8,6 +8,7 @@ import './style.css';
 
 const STORAGE_KEY = 'google-ai-conversations-v1';
 const THEME_KEY = 'google-ai-theme';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL?.replace(/\/$/, '') || '';
 const starterQuestions = [
   ['Science', 'Why is the sky blue?'],
   ['Everyday science', 'Why do helium balloons float?'],
@@ -271,7 +272,10 @@ async function generateAnswer(turnIndex, regenerate) {
   let streamedText = '';
 
   try {
-    const response = await fetch('/api/answer', {
+    if (!API_BASE_URL && import.meta.env.BASE_URL !== '/') {
+      throw new Error('The Gemini service is not configured for this Pages deployment.');
+    }
+    const response = await fetch(`${API_BASE_URL}/api/answer`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ question: turn.question, history: priorTurns }),

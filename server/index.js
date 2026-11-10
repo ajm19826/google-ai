@@ -1,6 +1,7 @@
 import 'dotenv/config';
 import express from 'express';
 import helmet from 'helmet';
+import cors from 'cors';
 import { rateLimit } from 'express-rate-limit';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
@@ -22,6 +23,12 @@ export function createApp({ answerStream = streamAnswer, getRecommendations = re
   app.disable('x-powered-by');
   app.use(helmet({ contentSecurityPolicy: false }));
   app.use(express.json({ limit: '32kb' }));
+  const allowedOrigins = (process.env.CORS_ORIGIN || '').split(',').map(origin => origin.trim()).filter(Boolean);
+  app.use('/api', cors({
+    origin(origin, callback) {
+      callback(null, !origin || allowedOrigins.includes(origin));
+    }
+  }));
   app.use('/api/', rateLimit({ windowMs: 60_000, limit: 20, standardHeaders: 'draft-8', legacyHeaders: false }));
 
   app.post('/api/answer', async (request, response) => {
