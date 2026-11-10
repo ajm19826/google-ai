@@ -341,6 +341,8 @@ async function generateAnswer(turnIndex, regenerate) {
     turn.answer = streamedText;
     turn.error = error.name === 'TimeoutError'
       ? 'That took longer than expected.'
+      : error.status === 400 || /400 API error/.test(error.message || '')
+        ? 'Gemini rejected the request. Check that VITE_GEMINI_API_KEY is valid and enabled for the Gemini API.'
       : (error.message || 'Something went wrong.');
   } finally {
     pending = false;
