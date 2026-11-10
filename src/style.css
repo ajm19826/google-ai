@@ -67,6 +67,7 @@ button:focus-visible, textarea:focus-visible { outline: 2px solid var(--focus); 
 .sidebar:not(.collapsed) ~ .main-column { width: calc(100% - 252px); margin-left: 252px; }
 .topbar { position: sticky; top: 0; z-index: 3; display: flex; height: 76px; flex: 0 0 76px; align-items: center; justify-content: space-between; padding: 0 34px; background: color-mix(in srgb, var(--page) 94%, transparent); backdrop-filter: blur(14px); }
 .top-nav, .top-actions { display: flex; height: 100%; align-items: center; gap: 23px; }
+.mobile-menu-button { display: none; }
 .top-nav { color: var(--muted); font-size: 13px; }
 .active-tab { position: relative; align-self: stretch; display: flex; align-items: center; color: var(--text); font-weight: 600; }
 .active-tab::after { position: absolute; right: 0; bottom: 14px; left: 0; height: 2px; border-radius: 2px; background: var(--accent-strong); content: ''; }
@@ -154,6 +155,7 @@ button:focus-visible, textarea:focus-visible { outline: 2px solid var(--focus); 
   .main-column, .sidebar:not(.collapsed) ~ .main-column { width: 100%; margin-left: 0; }
   .topbar { height: 62px; flex-basis: 62px; padding: 0 13px; }
   .top-nav { gap: 14px; font-size: 12px; }
+  .mobile-menu-button { display: grid; width: 30px; height: 34px; margin-right: -6px; }
   .top-nav span:nth-child(n+4) { display: none; }
   .top-actions { gap: 7px; }
   .model-badge { height: 30px; padding: 0 10px; }

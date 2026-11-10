@@ -11,6 +11,7 @@ const STORAGE_KEY = 'google-ai-conversations-v1';
 const THEME_KEY = 'google-ai-theme';
 const PUBLIC_GEMINI_KEY = import.meta.env.VITE_GEMINI_API_KEY || '';
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL?.replace(/\/$/, '') || '';
+const STATIC_PAGES = import.meta.env.VITE_STATIC_PAGES === 'true';
 const starterQuestions = [
   ['Science', 'Why is the sky blue?'],
   ['Everyday science', 'Why do helium balloons float?'],
@@ -38,6 +39,7 @@ document.querySelector('#app').innerHTML = `
     <div class="main-column">
       <header class="topbar">
         <div class="top-nav" aria-label="Search mode">
+          <button class="icon-button mobile-menu-button" id="mobile-menu-toggle" type="button" aria-label="Open conversation history" title="Open conversation history"><span aria-hidden="true">☰</span></button>
           <span class="active-tab">AI Mode</span><span>All</span><span>Images</span><span>Videos</span><span>News</span><span class="more-tab">More ⌄</span>
         </div>
         <div class="top-actions">
@@ -88,6 +90,11 @@ const sidebar = document.querySelector('#sidebar');
 const toast = document.querySelector('#toast');
 let toastTimer;
 
+if (window.matchMedia('(max-width: 720px)').matches) {
+  collapsed = true;
+  sidebar.classList.add('collapsed');
+}
+
 marked.setOptions({ breaks: true, gfm: true });
 document.documentElement.dataset.theme = localStorage.getItem(THEME_KEY) || 'dark';
 updateThemeButton();
@@ -112,11 +119,15 @@ input.addEventListener('keydown', event => {
 });
 
 document.querySelector('#new-chat').addEventListener('click', startNewConversation);
-document.querySelector('#menu-toggle').addEventListener('click', () => {
+function toggleSidebar() {
   collapsed = !collapsed;
   sidebar.classList.toggle('collapsed', collapsed);
   sidebar.classList.toggle('mobile-open', !collapsed && window.matchMedia('(max-width: 720px)').matches);
-});
+  document.querySelector('#mobile-menu-toggle').setAttribute('aria-label', `${collapsed ? 'Open' : 'Close'} conversation history`);
+}
+
+document.querySelector('#menu-toggle').addEventListener('click', toggleSidebar);
+document.querySelector('#mobile-menu-toggle').addEventListener('click', toggleSidebar);
 
 document.querySelector('#theme-toggle').addEventListener('click', () => {
   const nextTheme = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
@@ -283,7 +294,7 @@ async function generateAnswer(turnIndex, regenerate) {
       turn.answer = streamedText;
       turn.recommendations = await recommendGeminiQuestions(PUBLIC_GEMINI_KEY, turn.question, streamedText, priorTurns);
     } else {
-      if (!API_BASE_URL && import.meta.env.BASE_URL !== '/') {
+      if (!API_BASE_URL && STATIC_PAGES) {
         throw new Error('Gemini is not configured. Add VITE_GEMINI_API_KEY before building for GitHub Pages.');
       }
       const response = await fetch(`${API_BASE_URL}/api/answer`, {
