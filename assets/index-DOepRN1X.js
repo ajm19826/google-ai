@@ -71,7 +71,7 @@ Suggest 4 short, varied follow-up questions for this learner. Base them on the c
 Conversation: ${i.map(g=>`${g.role}: ${g.content}`).join(`
 `)}
 Question: ${e}
-Answer: ${r}`})).output_text||"",h=o.indexOf("["),c=o.lastIndexOf("]");if(h<0||c<=h)return[];try{const g=JSON.parse(o.slice(h,c+1));return Array.isArray(g)?g.filter(d=>typeof d=="string").slice(0,4).map(d=>d.slice(0,140)):[]}catch{return[]}}const Wr="google-ai-conversations-v1",jr="google-ai-theme",en="AIzaSyD9QKNVTDAIzaSyD9QKNVTDaZCauMs8axno9x8XlU6VUdAEU";const Ki=[["Science","Why is the sky blue?"],["Everyday science","Why do helium balloons float?"],["Curiosity","Can a balloon reach the moon?"],["How things work","How does an air compressor work?"]];let yt=Ji(),et=null,Xe=!1,Ce=!1;document.querySelector("#app").innerHTML=`
+Answer: ${r}`})).output_text||"",h=o.indexOf("["),c=o.lastIndexOf("]");if(h<0||c<=h)return[];try{const g=JSON.parse(o.slice(h,c+1));return Array.isArray(g)?g.filter(d=>typeof d=="string").slice(0,4).map(d=>d.slice(0,140)):[]}catch{return[]}}const Wr="google-ai-conversations-v1",jr="google-ai-theme",en="AIzaSyCFpg5dqYMogb4o3f9mflYxZJn8iJvhpC0";const Ki=[["Science","Why is the sky blue?"],["Everyday science","Why do helium balloons float?"],["Curiosity","Can a balloon reach the moon?"],["How things work","How does an air compressor work?"]];let yt=Ji(),et=null,Xe=!1,Ce=!1;document.querySelector("#app").innerHTML=`
   <div class="app-shell">
     <aside class="sidebar" id="sidebar" aria-label="Conversation history">
       <div class="rail-top">
